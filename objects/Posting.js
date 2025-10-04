@@ -1,6 +1,6 @@
 class Posting {
-    constructor(title, image, price, tags) {
-        this.title = title;
+    constructor(id, image, price, tags) {
+        this.id = id;
         this.image = image;
         this.price = price;
         this.tags = tags;
