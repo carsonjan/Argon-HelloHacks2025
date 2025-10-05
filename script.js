@@ -2,15 +2,21 @@
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
 
-hamburger.addEventListener('click', () => {
-    hamburger.classList.toggle('active');
-    navMenu.classList.toggle('active');
-});
+if (hamburger && navMenu) {
+    hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        navMenu.classList.toggle('active');
+    });
+}
 
 // Close mobile menu when clicking on a link
 document.querySelectorAll('.nav-link').forEach(n => n.addEventListener('click', () => {
-    hamburger.classList.remove('active');
-    navMenu.classList.remove('active');
+    if (hamburger) {
+        hamburger.classList.remove('active');
+    }
+    if (navMenu) {
+        navMenu.classList.remove('active');
+    }
 }));
 
 // Smooth scrolling for navigation links
@@ -176,6 +182,221 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(el);
     });
 });
+
+// Price range slider syncing
+const initPriceSlider = (rangeSlider) => {
+    const minNumber = rangeSlider.querySelector('.min-price');
+    const maxNumber = rangeSlider.querySelector('.max-price');
+    const minRange = rangeSlider.querySelector('.min-input');
+    const maxRange = rangeSlider.querySelector('.max-input');
+    const sliderTrack = rangeSlider.querySelector('.slider');
+    const progressBar = sliderTrack ? sliderTrack.querySelector('.progress') : null;
+    const minDisplay = rangeSlider.querySelector('.min-display');
+    const maxDisplay = rangeSlider.querySelector('.max-display');
+    const prefix = rangeSlider.dataset.prefix !== undefined ? rangeSlider.dataset.prefix : '$';
+    const suffix = rangeSlider.dataset.suffix || '';
+
+    if (!minNumber || !maxNumber || !minRange || !maxRange) {
+        return;
+    }
+
+    const minLimit = parseFloat(minRange.min || minNumber.min || '0');
+    const maxLimit = parseFloat(maxRange.max || maxNumber.max || '100');
+    const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+    const formatValue = (value) => {
+        const numericValue = Math.round(Number(value));
+        if (!Number.isFinite(numericValue)) {
+            return `${prefix}${value}${suffix}`;
+        }
+        return `${prefix}${numericValue.toLocaleString()}${suffix}`;
+    };
+
+    let minTooltip = null;
+    let maxTooltip = null;
+
+    if (sliderTrack) {
+        const createTooltip = (className) => {
+            const tooltip = document.createElement('div');
+            tooltip.className = `thumb-tooltip ${className}`;
+            sliderTrack.appendChild(tooltip);
+            return tooltip;
+        };
+
+        minTooltip = createTooltip('min-tooltip');
+        maxTooltip = createTooltip('max-tooltip');
+        sliderTrack.classList.add('show-tooltips');
+    }
+
+    minRange.setAttribute('max', maxLimit);
+    maxRange.setAttribute('min', minLimit);
+
+    const renderDisplays = (minValue, maxValue) => {
+        if (minDisplay) {
+            minDisplay.textContent = formatValue(minValue);
+        }
+        if (maxDisplay) {
+            maxDisplay.textContent = formatValue(maxValue);
+        }
+    };
+
+    const clampTooltipPercent = (percent) => Math.min(Math.max(percent, 5), 95);
+
+    const updateProgress = () => {
+        const minValue = parseFloat(minRange.value);
+        const maxValue = parseFloat(maxRange.value);
+        const span = Math.max(maxLimit - minLimit, 1);
+        const start = ((minValue - minLimit) / span) * 100;
+        const end = ((maxValue - minLimit) / span) * 100;
+        const width = Math.max(end - start, 0);
+
+        if (progressBar) {
+            progressBar.style.left = `${start}%`;
+            progressBar.style.width = `${width}%`;
+        }
+
+        if (minTooltip) {
+            minTooltip.textContent = formatValue(minValue);
+            minTooltip.style.left = `${clampTooltipPercent(start)}%`;
+        }
+
+        if (maxTooltip) {
+            maxTooltip.textContent = formatValue(maxValue);
+            maxTooltip.style.left = `${clampTooltipPercent(end)}%`;
+        }
+    };
+
+    const updateTrackState = (isActive) => {
+        if (!sliderTrack) return;
+        sliderTrack.classList.toggle('is-active', isActive);
+    };
+
+    const bindActiveHandlers = (input) => {
+        input.addEventListener('pointerdown', () => updateTrackState(true));
+        input.addEventListener('pointerup', () => updateTrackState(false));
+        input.addEventListener('pointerleave', () => updateTrackState(false));
+        input.addEventListener('focus', () => updateTrackState(true));
+        input.addEventListener('blur', () => updateTrackState(false));
+        input.addEventListener('touchstart', () => updateTrackState(true), { passive: true });
+        input.addEventListener('touchend', () => updateTrackState(false));
+        input.addEventListener('touchcancel', () => updateTrackState(false));
+    };
+
+    bindActiveHandlers(minRange);
+    bindActiveHandlers(maxRange);
+    window.addEventListener('pointerup', () => updateTrackState(false));
+    window.addEventListener('pointercancel', () => updateTrackState(false));
+
+    const syncFromRange = () => {
+        let minValue = parseFloat(minRange.value);
+        let maxValue = parseFloat(maxRange.value);
+
+        if (!Number.isFinite(minValue)) {
+            minValue = minLimit;
+        }
+        if (!Number.isFinite(maxValue)) {
+            maxValue = maxLimit;
+        }
+
+        if (minValue > maxValue) {
+            minValue = maxValue;
+            minRange.value = minValue;
+        }
+
+        minValue = Math.round(minValue);
+        maxValue = Math.round(maxValue);
+
+        minRange.value = minValue;
+        maxRange.value = maxValue;
+        minNumber.value = minValue;
+        maxNumber.value = maxValue;
+        renderDisplays(minValue, maxValue);
+        updateProgress();
+    };
+
+    const syncFromNumber = () => {
+        let minValue = parseFloat(minNumber.value);
+        let maxValue = parseFloat(maxNumber.value);
+
+        if (!Number.isFinite(minValue)) {
+            minValue = minLimit;
+        }
+        if (!Number.isFinite(maxValue)) {
+            maxValue = maxLimit;
+        }
+
+        minValue = clamp(minValue, minLimit, maxValue);
+        maxValue = clamp(maxValue, minValue, maxLimit);
+
+        minValue = Math.round(minValue);
+        maxValue = Math.round(maxValue);
+
+        minRange.value = minValue;
+        maxRange.value = maxValue;
+        minNumber.value = minValue;
+        maxNumber.value = maxValue;
+        renderDisplays(minValue, maxValue);
+        updateProgress();
+    };
+
+    minRange.addEventListener('input', () => {
+        if (parseFloat(minRange.value) > parseFloat(maxRange.value)) {
+            maxRange.value = minRange.value;
+        }
+        syncFromRange();
+    });
+
+    maxRange.addEventListener('input', () => {
+        if (parseFloat(maxRange.value) < parseFloat(minRange.value)) {
+            minRange.value = maxRange.value;
+        }
+        syncFromRange();
+    });
+
+    const handleMinNumberInput = () => {
+        if (minNumber.value === '') return;
+        syncFromNumber();
+    };
+
+    const handleMaxNumberInput = () => {
+        if (maxNumber.value === '') return;
+        syncFromNumber();
+    };
+
+    const handleMinNumberCommit = () => {
+        if (minNumber.value === '') {
+            minNumber.value = minLimit;
+        }
+        syncFromNumber();
+    };
+
+    const handleMaxNumberCommit = () => {
+        if (maxNumber.value === '') {
+            maxNumber.value = maxLimit;
+        }
+        syncFromNumber();
+    };
+
+    minNumber.addEventListener('input', handleMinNumberInput);
+    minNumber.addEventListener('change', handleMinNumberCommit);
+    minNumber.addEventListener('blur', handleMinNumberCommit);
+    maxNumber.addEventListener('input', handleMaxNumberInput);
+    maxNumber.addEventListener('change', handleMaxNumberCommit);
+    maxNumber.addEventListener('blur', handleMaxNumberCommit);
+
+    syncFromNumber();
+};
+
+const setupPriceSliders = () => {
+    const sliders = document.querySelectorAll('.range-slider');
+    if (!sliders.length) return;
+    sliders.forEach(initPriceSlider);
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupPriceSliders);
+} else {
+    setupPriceSliders();
+}
 
 // Button click animations
 document.querySelectorAll('.btn').forEach(button => {
