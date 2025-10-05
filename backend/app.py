@@ -7,7 +7,9 @@ import base64
 # to host locally:
 # pip install -r requirements.txt
 # uvicorn app:app --host 0.0.0.0 --port 8000
-DATA_CSV_PATH = "./data/users.csv"
+
+DATA_DIR = "sample-data" # change to real data for production
+DATA_CSV_PATH = f"./{DATA_DIR}/users.csv"
 
 
 
@@ -40,7 +42,7 @@ async def getAllPostings():
             tags_columns = ["Roommate Personality", "Pet Policy", "Guest Policy", "Sleep Schedule", "Grocery Preference"]
             row["tags"] = [row[col] for col in tags_columns]
 
-            avatar_path = f"./data/avatars/Avatar_{row['id']}.png"  # adjust path
+            avatar_path = f"./{DATA_DIR}/avatars/Avatar_{row['id']}.png"  # adjust path
             try:
                 with open(avatar_path, "rb") as img_file:
                     encoded_string = base64.b64encode(img_file.read()).decode("utf-8")
@@ -50,7 +52,7 @@ async def getAllPostings():
 
             pics = []
             for i in range(3):
-                pics_path = f"./data/pics/Pics{i}_{row['id']}.png"  # adjust path
+                pics_path = f"./{DATA_DIR}/pics/Pics{i}_{row['id']}.png"  # adjust path
                 try:
                     with open(pics_path, "rb") as img_file:
                         encoded_string = base64.b64encode(img_file.read()).decode("utf-8")
