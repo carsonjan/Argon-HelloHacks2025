@@ -52,7 +52,7 @@
 #tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 5%;
+    gap: 2%;
 }
 
 .tag {
@@ -89,11 +89,11 @@
     font-size: small;
 }
 
-#imgs {
+#pics {
     display: flex;
     justify-content: space-between;
 }
-#imgs img {
+#pics img {
     width: 30%;
     aspect-ratio: 1;
     border-radius: 20%;
