@@ -1,0 +1,130 @@
+:root {
+    background-color: white;
+    font-family: sans-serif;
+}
+#content {
+    background-color: black;
+    padding: 15% 10%;
+}
+
+#card {
+    display: flex;
+    gap: 2%;
+    background-color: white;
+    border-radius: 3%;
+    padding: 10%;
+}
+
+#left {
+    flex: 4;
+}
+
+#right {
+    flex: 5;
+    display: flex;
+    flex-direction: column;
+    padding: 5% 0%;
+    row-gap: 10px;
+    justify-content: space-between;
+}
+
+#avatar {
+    width: 70%;
+    aspect-ratio: 1 / 1;
+    border-radius: 100%;
+}
+
+#mainInfo {
+    margin: 5% 0%;
+    display: flex;
+    gap: 5%
+}
+
+#mainInfo span {
+    font-size: xx-large;
+    font-weight: bold;
+}
+
+#age {
+    font-style: italic;
+}
+
+#tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5%;
+}
+
+.tag {
+    font-size: x-small;
+    font-weight: bold;
+    background-color: lightgray;
+    border-radius: 9999px;
+    padding: 2% 3%;
+    margin: 2%;
+}
+
+.bluePillBox {
+    background-color: #001328;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    padding: 2% 5%;
+    border-radius: 9999px;
+}
+
+#aboutMe {
+    background-color: #D6CECE;
+    padding: 3%;
+    border-radius: 10px;
+}
+
+#aboutMeHead {
+    font-weight: bolder;
+    padding: 2% 0%;
+}
+
+#aboutMeContent {
+    font-weight: normal;
+}
+
+#imgs {
+    display: flex;
+    justify-content: space-between;
+}
+#imgs img {
+    width: 30%;
+    aspect-ratio: 1;
+    border-radius: 20%;
+}
+
+#r
+
+#rent {
+    text-align: center;
+}
+
+#control {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -8%;
+}
+
+#control button {
+    margin: 0% -5%;
+    width: 15%;
+    aspect-ratio: 1;
+    font-size: 300%;
+    font-weight: bolder;
+    border: none;
+    opacity: 0.97;
+    border-radius: 100%;
+}
+
+#no {
+    color: red;
+}
+
+#yes {
+    color: green
+}
