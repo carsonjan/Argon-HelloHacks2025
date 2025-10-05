@@ -186,7 +186,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // Listing filtering helpers
 const listingFilterState = {
     price: { min: null, max: null },
-    distance: { min: null, max: null }
+    distance: { min: null, max: null },
+    guest: [],
+    roommates: [],
+    pet: [],
+    sleep: [],
+    grocery: []
 };
 
 const parseListingPrice = (card) => {
@@ -210,6 +215,75 @@ const parseListingDistance = (card) => {
     return null;
 };
 
+const parseListingGuestPolicy = (card) => {
+    const metaElement = card.querySelector('.listing-meta');
+    if (!metaElement) return null;
+    const text = (metaElement.textContent || '').toLowerCase();
+    if (text.includes('no guest')) {
+        return 'no-guests';
+    }
+    if (text.includes('frequent guest')) {
+        return 'frequent-guest';
+    }
+    if (text.includes('no preference')) {
+        return 'no-preference';
+    }
+    return null;
+};
+
+const parseListingRoommates = (card) => {
+    const metaElement = card.querySelector('.listing-meta');
+    if (!metaElement) return null;
+    const text = metaElement.textContent || '';
+    const match = text.match(/(\d+)\s*roommate/i);
+    return match ? parseInt(match[1], 10) : null;
+};
+
+const parseListingPetPolicy = (card) => {
+    const metaElement = card.querySelector('.listing-meta');
+    if (!metaElement) return null;
+    const text = (metaElement.textContent || '').toLowerCase();
+    if (text.includes('has pets')) {
+        return 'has-pets';
+    }
+    if (text.includes('no pets')) {
+        return 'no-pets';
+    }
+    if (text.includes('no preference')) {
+        return 'no-preference';
+    }
+    return null;
+};
+
+const parseListingSleepSchedule = (card) => {
+    const metaElement = card.querySelector('.listing-meta');
+    if (!metaElement) return null;
+    const text = (metaElement.textContent || '').toLowerCase();
+    if (text.includes('morning bird')) {
+        return 'morning-bird';
+    }
+    if (text.includes('night owl')) {
+        return 'night-owl';
+    }
+    return null;
+};
+
+const parseListingGroceryPreference = (card) => {
+    const metaElement = card.querySelector('.listing-meta');
+    if (!metaElement) return null;
+    const text = (metaElement.textContent || '').toLowerCase();
+    if (text.includes("separate groceries")) {
+        return 'separate-groceries';
+    }
+    if (text.includes("doesn't cook") || text.includes('doesnt cook')) {
+        return 'does-not-cook';
+    }
+    if (text.includes('cook together')) {
+        return 'cook-together';
+    }
+    return null;
+};
+
 function updateListingVisibility() {
     const cards = document.querySelectorAll('.listing-card');
     let visibleCount = 0;
@@ -217,6 +291,11 @@ function updateListingVisibility() {
     cards.forEach(card => {
         const priceValue = parseListingPrice(card);
         const distanceValue = parseListingDistance(card);
+        const guestPolicy = parseListingGuestPolicy(card);
+        const roommateCount = parseListingRoommates(card);
+        const petPolicy = parseListingPetPolicy(card);
+        const sleepSchedule = parseListingSleepSchedule(card);
+        const groceryPreference = parseListingGroceryPreference(card);
 
         const matchesPrice = (() => {
             const { min, max } = listingFilterState.price;
@@ -236,7 +315,47 @@ function updateListingVisibility() {
             return true;
         })();
 
-        const isVisible = matchesPrice && matchesDistance;
+        const matchesGuest = (() => {
+            const selectedGuests = listingFilterState.guest;
+            if (!selectedGuests.length) return true;
+            if (!guestPolicy) return false;
+            return selectedGuests.includes(guestPolicy);
+        })();
+
+        const matchesRoommates = (() => {
+            const selected = listingFilterState.roommates;
+            if (!selected.length) return true;
+            if (!Number.isFinite(roommateCount)) return false;
+            return selected.some(filter => {
+                if (filter === 'under-6') return roommateCount < 6;
+                if (filter === 'under-4') return roommateCount < 4;
+                if (filter === 'under-2') return roommateCount < 2;
+                return false;
+            });
+        })();
+
+        const matchesPet = (() => {
+            const selected = listingFilterState.pet;
+            if (!selected.length) return true;
+            if (!petPolicy) return false;
+            return selected.includes(petPolicy);
+        })();
+
+        const matchesSleep = (() => {
+            const selected = listingFilterState.sleep;
+            if (!selected.length) return true;
+            if (!sleepSchedule) return false;
+            return selected.includes(sleepSchedule);
+        })();
+
+        const matchesGrocery = (() => {
+            const selected = listingFilterState.grocery;
+            if (!selected.length) return true;
+            if (!groceryPreference) return false;
+            return selected.includes(groceryPreference);
+        })();
+
+        const isVisible = matchesPrice && matchesDistance && matchesGuest && matchesRoommates && matchesPet && matchesSleep && matchesGrocery;
         card.style.display = isVisible ? '' : 'none';
         if (isVisible) {
             visibleCount += 1;
@@ -495,8 +614,137 @@ const setupPriceSliders = () => {
     sliders.forEach(initPriceSlider);
 };
 
+const setupGuestFilters = () => {
+    const guestCheckboxes = document.querySelectorAll('input[name="guest"]');
+    if (!guestCheckboxes.length) return;
+    const guestValueMap = {
+        'guest-1': 'no-guests',
+        'guest-2': 'frequent-guest',
+        'guest-3': 'no-preference'
+    };
+
+    const updateGuestState = () => {
+        const selected = Array.from(guestCheckboxes)
+            .filter(box => box.checked)
+            .map(box => guestValueMap[box.id])
+            .filter(Boolean);
+        listingFilterState.guest = selected;
+        updateListingVisibility();
+    };
+
+    guestCheckboxes.forEach(box => {
+        box.addEventListener('change', updateGuestState);
+    });
+
+    updateGuestState();
+};
+
+const setupRoommateFilters = () => {
+    const roommateCheckboxes = document.querySelectorAll('input[name="room"]');
+    if (!roommateCheckboxes.length) return;
+    const roommateMap = {
+        'room-1': 'under-6',
+        'room-2': 'under-4',
+        'room-3': 'under-2'
+    };
+
+    const updateRoommateState = () => {
+        const selected = Array.from(roommateCheckboxes)
+            .filter(box => box.checked)
+            .map(box => roommateMap[box.id])
+            .filter(Boolean);
+        listingFilterState.roommates = selected;
+        updateListingVisibility();
+    };
+
+    roommateCheckboxes.forEach(box => {
+        box.addEventListener('change', updateRoommateState);
+    });
+
+    updateRoommateState();
+};
+
+const setupPetFilters = () => {
+    const petCheckboxes = document.querySelectorAll('input[name="pet"]');
+    if (!petCheckboxes.length) return;
+    const petMap = {
+        'pet-1': 'has-pets',
+        'pet-2': 'no-pets',
+        'pet-3': 'no-preference'
+    };
+
+    const updatePetState = () => {
+        const selected = Array.from(petCheckboxes)
+            .filter(box => box.checked)
+            .map(box => petMap[box.id])
+            .filter(Boolean);
+        listingFilterState.pet = selected;
+        updateListingVisibility();
+    };
+
+    petCheckboxes.forEach(box => {
+        box.addEventListener('change', updatePetState);
+    });
+
+    updatePetState();
+};
+
+const setupSleepFilters = () => {
+    const sleepCheckboxes = document.querySelectorAll('input[name="sleep"]');
+    if (!sleepCheckboxes.length) return;
+    const sleepMap = {
+        'sleep-1': 'morning-bird',
+        'sleep-2': 'night-owl'
+    };
+
+    const updateSleepState = () => {
+        const selected = Array.from(sleepCheckboxes)
+            .filter(box => box.checked)
+            .map(box => sleepMap[box.id])
+            .filter(Boolean);
+        listingFilterState.sleep = selected;
+        updateListingVisibility();
+    };
+
+    sleepCheckboxes.forEach(box => {
+        box.addEventListener('change', updateSleepState);
+    });
+
+    updateSleepState();
+};
+
+const setupGroceryFilters = () => {
+    const groceryCheckboxes = document.querySelectorAll('input[name="grocery"]');
+    if (!groceryCheckboxes.length) return;
+    const updateGroceryState = () => {
+        const selected = Array.from(groceryCheckboxes)
+            .filter(box => box.checked)
+            .map(box => {
+                const label = box.nextElementSibling ? (box.nextElementSibling.textContent || '').toLowerCase() : '';
+                if (label.includes('separate groceries')) return 'separate-groceries';
+                if (label.includes("doesn't cook") || label.includes('doesnt cook')) return 'does-not-cook';
+                if (label.includes('cook together')) return 'cook-together';
+                return null;
+            })
+            .filter(Boolean);
+        listingFilterState.grocery = selected;
+        updateListingVisibility();
+    };
+
+    groceryCheckboxes.forEach(box => {
+        box.addEventListener('change', updateGroceryState);
+    });
+
+    updateGroceryState();
+};
+
 const initializeFilters = () => {
     setupPriceSliders();
+    setupGuestFilters();
+    setupRoommateFilters();
+    setupPetFilters();
+    setupSleepFilters();
+    setupGroceryFilters();
     updateListingVisibility();
 };
 
