@@ -10,6 +10,9 @@ function buildPostings() {};
 // remove the current posting from postings, move to next card
 function nextCard() {};
 
+// render first in line posting's data onto screen
+function renderCurrentPosting() {};
+
 // show details for this posting
 function showPostingDetails(Posting) {};
 
