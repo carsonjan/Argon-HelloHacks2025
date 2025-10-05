@@ -183,6 +183,73 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Listing filtering helpers
+const listingFilterState = {
+    price: { min: null, max: null },
+    distance: { min: null, max: null }
+};
+
+const parseListingPrice = (card) => {
+    const priceElement = card.querySelector('.listing-price');
+    if (!priceElement) return null;
+    const match = priceElement.textContent.replace(/,/g, '').match(/\d+(?:\.\d+)?/);
+    return match ? parseFloat(match[0]) : null;
+};
+
+const parseListingDistance = (card) => {
+    const metaElement = card.querySelector('.listing-meta');
+    if (!metaElement) return null;
+    const text = metaElement.textContent || '';
+    const distanceMatch = text.match(/([0-9]+(?:\.[0-9]+)?)\s*km/i);
+    if (distanceMatch) {
+        return parseFloat(distanceMatch[1]);
+    }
+    if (/on campus/i.test(text)) {
+        return 0;
+    }
+    return null;
+};
+
+function updateListingVisibility() {
+    const cards = document.querySelectorAll('.listing-card');
+    let visibleCount = 0;
+
+    cards.forEach(card => {
+        const priceValue = parseListingPrice(card);
+        const distanceValue = parseListingDistance(card);
+
+        const matchesPrice = (() => {
+            const { min, max } = listingFilterState.price;
+            if (min === null && max === null) return true;
+            if (!Number.isFinite(priceValue)) return true;
+            if (min !== null && priceValue < min) return false;
+            if (max !== null && priceValue > max) return false;
+            return true;
+        })();
+
+        const matchesDistance = (() => {
+            const { min, max } = listingFilterState.distance;
+            if (min === null && max === null) return true;
+            if (!Number.isFinite(distanceValue)) return true;
+            if (min !== null && distanceValue < min) return false;
+            if (max !== null && distanceValue > max) return false;
+            return true;
+        })();
+
+        const isVisible = matchesPrice && matchesDistance;
+        card.style.display = isVisible ? '' : 'none';
+        if (isVisible) {
+            visibleCount += 1;
+        }
+    });
+
+    const resultsCount = document.querySelector('.results-count');
+    if (resultsCount) {
+        const label = visibleCount === 1 ? 'listing' : 'listings';
+        resultsCount.textContent = `Showing ${visibleCount} ${label}`;
+    }
+}
+
 // Price range slider syncing
 const initPriceSlider = (rangeSlider) => {
     const minNumber = rangeSlider.querySelector('.min-price');
@@ -195,6 +262,7 @@ const initPriceSlider = (rangeSlider) => {
     const maxDisplay = rangeSlider.querySelector('.max-display');
     const prefix = rangeSlider.dataset.prefix !== undefined ? rangeSlider.dataset.prefix : '$';
     const suffix = rangeSlider.dataset.suffix || '';
+    const sliderType = prefix === '$' ? 'price' : suffix.trim() === 'km' ? 'distance' : null;
 
     if (!minNumber || !maxNumber || !minRange || !maxRange) {
         return;
@@ -311,6 +379,17 @@ const initPriceSlider = (rangeSlider) => {
         maxNumber.value = maxValue;
         renderDisplays(minValue, maxValue);
         updateProgress();
+        if (sliderType === 'price') {
+            listingFilterState.price.min = minValue;
+            listingFilterState.price.max = maxValue;
+        }
+        if (sliderType === 'distance') {
+            listingFilterState.distance.min = minValue;
+            listingFilterState.distance.max = maxValue;
+        }
+        if (sliderType) {
+            updateListingVisibility();
+        }
     };
 
     const syncFromNumber = () => {
@@ -336,6 +415,17 @@ const initPriceSlider = (rangeSlider) => {
         maxNumber.value = maxValue;
         renderDisplays(minValue, maxValue);
         updateProgress();
+        if (sliderType === 'price') {
+            listingFilterState.price.min = minValue;
+            listingFilterState.price.max = maxValue;
+        }
+        if (sliderType === 'distance') {
+            listingFilterState.distance.min = minValue;
+            listingFilterState.distance.max = maxValue;
+        }
+        if (sliderType) {
+            updateListingVisibility();
+        }
     };
 
     minRange.addEventListener('input', () => {
@@ -384,6 +474,19 @@ const initPriceSlider = (rangeSlider) => {
     maxNumber.addEventListener('blur', handleMaxNumberCommit);
 
     syncFromNumber();
+    if (sliderType) {
+        const minValue = parseFloat(minRange.value);
+        const maxValue = parseFloat(maxRange.value);
+        if (sliderType === 'price') {
+            listingFilterState.price.min = minValue;
+            listingFilterState.price.max = maxValue;
+        }
+        if (sliderType === 'distance') {
+            listingFilterState.distance.min = minValue;
+            listingFilterState.distance.max = maxValue;
+        }
+        updateListingVisibility();
+    }
 };
 
 const setupPriceSliders = () => {
@@ -392,10 +495,15 @@ const setupPriceSliders = () => {
     sliders.forEach(initPriceSlider);
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupPriceSliders);
-} else {
+const initializeFilters = () => {
     setupPriceSliders();
+    updateListingVisibility();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeFilters);
+} else {
+    initializeFilters();
 }
 
 // Button click animations
