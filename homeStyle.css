@@ -7,6 +7,19 @@
     padding: 5% 10%;
 }
 
+#returnBar {
+    margin-bottom: -3%;
+}
+#returnButton {
+    width: 10%;
+    height: 3%;
+    font-size: 150%;
+    font-weight: bolder;
+    border: none;
+    opacity: 0.97;
+    border-radius: 9999px;
+    margin-left: -2%;
+}
 #card {
     display: flex;
     gap: 2%;
