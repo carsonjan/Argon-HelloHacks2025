@@ -326,12 +326,7 @@ function updateListingVisibility() {
             const selected = listingFilterState.roommates;
             if (!selected.length) return true;
             if (!Number.isFinite(roommateCount)) return false;
-            return selected.some(filter => {
-                if (filter === 'under-6') return roommateCount < 6;
-                if (filter === 'under-4') return roommateCount < 4;
-                if (filter === 'under-2') return roommateCount < 2;
-                return false;
-            });
+            return selected.includes(roommateCount);
         })();
 
         const matchesPet = (() => {
@@ -643,16 +638,18 @@ const setupRoommateFilters = () => {
     const roommateCheckboxes = document.querySelectorAll('input[name="room"]');
     if (!roommateCheckboxes.length) return;
     const roommateMap = {
-        'room-1': 'under-6',
-        'room-2': 'under-4',
-        'room-3': 'under-2'
+        'room-1': 6,
+        'room-2': 5,
+        'room-3': 4,
+        'room-4': 3,
+        'room-5': 2
     };
 
     const updateRoommateState = () => {
         const selected = Array.from(roommateCheckboxes)
             .filter(box => box.checked)
             .map(box => roommateMap[box.id])
-            .filter(Boolean);
+            .filter(value => Number.isFinite(value));
         listingFilterState.roommates = selected;
         updateListingVisibility();
     };
